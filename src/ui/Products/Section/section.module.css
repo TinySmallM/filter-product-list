@@ -1,0 +1,30 @@
+.section_container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section_title {
+  font-size: 24px;
+  margin: 0;
+}
+
+.section_counter {
+  opacity: 0.4;
+}
+
+.section_items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 450px;
+  gap: 20px;
+  padding: 8px;
+  background-color: beige;
+}

@@ -1,4 +1,4 @@
-import { Products } from "@/ui/Products/Products";
+import { Products } from "@/ui/Products/Products/Products";
 import { getFetchProductList } from "../api/api";
 
 export const Home = async () => {

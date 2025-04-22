@@ -7,6 +7,4 @@ export async function revalidate(type: string) {
   if (type === REVALIDATE.productsAPI) {
     revalidateTag(REVALIDATE.productsAPI);
   }
-
-  // Error('no type in revalidate')
 }
