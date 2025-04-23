@@ -12,7 +12,7 @@
 }
 
 .products__form {
-  width: 100%;
+  min-width: 200px;
 }
 
 .products__filters {

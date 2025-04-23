@@ -3,7 +3,7 @@
 import { Product } from '@/app/api/api-types/product'
 import { Section } from '../Section/Section'
 import classNames from './products.module.css'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { revalidate } from '@/actions/revalidate'
 import { REVALIDATE } from '@/consts'
 
@@ -11,77 +11,77 @@ type Props = {
   productList: Product[]
 }
 
-type Point = {
+type FilterList = {
     name: string
     values: string[]
 }
 
 export const Products = ({productList}: Props) => {
   const [filterProductList, setFilterProductList] = useState(productList)
-  const [filterType, setFilterType] = useState<string[]>([])
-  const [points, setPoints] = useState<Point[]>([])
+  const [filterList, setFilterList] = useState<FilterList[]>([])
+  const [filterOptions, setFilterOptions] = useState<string[]>([])
+  const [minimumPrice, setMinimumPrice] = useState(0)
 
-  const keyFilters = useMemo(() => {
-    const keyFiltersHasTable = new Map<string, Set<string>>();
+  const notEmptyArray = filterOptions.length > 0
+ 
+  //Собираем лист фильтров на фронте (не использую всю пачку данных а беру по лимиту - это мешает)
+  useEffect(() => {
+    const filterListTable = new Map<string, Set<string>>();
 
     for (const item of filterProductList) {
       item.product_features.forEach(feature => {
         const filterName = feature.nameru
         const filterValue = feature.value
     
-        if (!keyFiltersHasTable.has(filterName)) {
-          keyFiltersHasTable.set(filterName, new Set());
+        if (!filterListTable.has(filterName)) {
+          filterListTable.set(filterName, new Set());
         }
   
-        keyFiltersHasTable.get(filterName)!.add(filterValue);
+        filterListTable.get(filterName)!.add(filterValue);
       })
     }
 
-    return Array.from(keyFiltersHasTable.entries()).map(([name, valuesSet]) => ({
-      name,
-      values: Array.from(valuesSet)
-    }))
-  }, [filterProductList])
+    setFilterList(
+      [...filterListTable].map(([name, values]) => ({
+        name,
+        values: [...values]
+      }))
+    )
+  }, [])
 
   useEffect(() => {
-    setFilterProductList(() => productList.filter((item) => {
-      if (filterType.length === 0) {
-        return true
-      }
+    setFilterProductList(
+      productList.filter((item) => {
+        const hasOption = item.product_features.some((feature) => filterOptions.includes(feature.value))
 
-      const countryFeature = item.product_features.find((feature) => (
-        filterType.includes(feature.value)
-      ))
-
-      return countryFeature && filterType.includes(countryFeature.value);
-    }))
-  }, [filterType])
-
-  useEffect(() => {
-    setPoints(keyFilters)
-  }, [filterProductList])
+        if (hasOption && item.price >= minimumPrice) {
+          return item
+        }
+        
+        if (!notEmptyArray && item.price >= minimumPrice) {
+          return item
+        }
+      })
+    )
+  }, [filterOptions, minimumPrice])
 
   const createFilterType = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = event.target;
-    revalidate(REVALIDATE.productsAPI)
-  
-    if (checked) {
-      setFilterType(prev => [...prev, value])
-    }
 
-    if (!checked) {
-      setFilterType(prev => prev.filter((item) => item !== value));
-    }
+    setFilterOptions((prev) => checked ? [...prev, value] : prev.filter((item) => item !== value));
+
+    //Данные могли обновится из админки, делаем ревалидацию.
+    revalidate(REVALIDATE.productsAPI)
   };
   
   return (
     <div className={classNames.products_container}>
       <div className={classNames.products}>
         <form className={classNames.products__form}>
-          {points.map((point) => (
-            <div key={point.name} className={classNames.products__filters}>
-              <h3>{point.name}</h3>
-              {point.values.map((value) => (
+          {filterList.map((item) => (
+            <div key={item.name} className={classNames.products__filters}>
+              <h3>{item.name}</h3>
+              {item.values.map((value) => (
                 <label key={value} className={classNames.products__input}>
                   <input type="checkbox" value={value} onChange={createFilterType} />
                   <span>{value}</span>
@@ -89,6 +89,14 @@ export const Products = ({productList}: Props) => {
               ))}
             </div>
           ))}
+          <input 
+            type='range' 
+            step='0.1'
+            min={740}
+            max={257330}
+            defaultValue={740}
+            onChange={(event) => setMinimumPrice(+event.target.value)}
+          />
         </form>
         <Section goods={filterProductList} />
       </div>
